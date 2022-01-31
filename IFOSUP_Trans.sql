@@ -71,6 +71,11 @@ SELECT colum_name FROM T_TRANS
 
 -------------------------------------------
 
+
+
+
+
+
 -- 28/01/22
 
 TRUNCATE TABLE T_TRANS
