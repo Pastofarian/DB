@@ -1,4 +1,12 @@
-
+/*On souhaite travailler avec la base de données « AdventureWorks2017 ».
+Nous travaillerons avec la table « HumanResources.Departement » :
+2
+Ecrire le code SQL qui nous montre une transaction avec quelques données insérées dans celle-ci (cfr.
+Schéma de la table pour connaître les champs en question).
+S’il devait y avoir une erreur au cours de l’insertion de données, veuillez générer un ROLLBACK
+pour réinitialiser la table sinon, le COMMIT a lieu.
+Montrez que ce Rollback est fonctionnel en s’appuyant sur des exemples pertinents ainsi que le
+COMMIT*/
 
 SELECT * FROM master.sys.databases; --infos sur master voir toutes les BDD
 

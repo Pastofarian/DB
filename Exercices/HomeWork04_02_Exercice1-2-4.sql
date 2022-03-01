@@ -6,37 +6,49 @@
 *   Schéma de la table pour connaître les champs en question).
 *   S’il devait y avoir une erreur au cours de l’insertion de données, veuillez générer un ROLLBACK
 *   pour réinitialiser la table sinon, le COMMIT a lieu.
-*   Montrez que ce Rollback est fonctionnel en s’appuyant sur des exemples pertinents ainsi que le
+*   Montrez que ce Rollback est fonctionnel en s’appuyant sur des exemples pertinents ainsi que le ainsi que le COMMIT.
 ***********************************************************************************************************************************************************/
+
 USE AdventureWorks2017
 GO
 
-IF OBJECT_ID('tempdb.#temp1') is not NULL
+-- Verify that the stored procedure does not already exist.  
+IF OBJECT_ID ( 'usp_GetErrorInfo', 'P' ) IS NOT NULL   
+    DROP PROCEDURE usp_GetErrorInfo;  
+GO  
+-- Create procedure to retrieve error information.
+CREATE PROCEDURE usp_GetErrorInfo  
+AS  
+SELECT  
+    ERROR_NUMBER() AS ErrorNumber  
+    ,ERROR_SEVERITY() AS ErrorSeverity  
+    ,ERROR_STATE() AS ErrorState  
+    ,ERROR_PROCEDURE() AS ErrorProcedure  
+    ,ERROR_LINE() AS ErrorLine  
+    ,ERROR_MESSAGE() AS ErrorMessage;  
+GO  
+
+--IF OBJECT_ID('tempdb.#temp1') is not NULL -- ne marche pas avec Azure car #temp1 n'est pas dans tempdb (jamais trouvé où)
 DROP table #temp1
 
 SELECT *
 INTO #temp1 
 FROM [HumanResources].[Department]
 
-BEGIN TRY  
 BEGIN TRANSACTION
+    BEGIN TRY  
 
--- SELECT 1/0 test;             -- retirer le commentaire pour avoir l'erreur
-INSERT INTO  #temp1 (Name, GroupName, ModifiedDate) VALUES ('Koality', 'Koality wellbeing', '2000-01-01 00:00:00.000')
+        --SELECT 1/0 test;             -- retirer le commentaire pour avoir l'erreur
+        INSERT INTO  #temp1 (Name, GroupName, ModifiedDate) VALUES ('Koality', 'Koality wellbeing', '2000-01-01 00:00:00.000')
 
-Commit Transaction
-END TRY  
-    BEGIN CATCH  
-    Rollback Transaction
-        SELECT
-        ERROR_NUMBER() AS ErrorNumber,
-        ERROR_SEVERITY() AS ErrorSeverity,
-        ERROR_STATE() AS ErrorState,
-        ERROR_PROCEDURE() AS ErrorProcedure,
-        ERROR_LINE() AS ErrorLine,
-        ERROR_MESSAGE() AS ErrorMessage
-    END CATCH
-GO 
+    END TRY  
+    BEGIN CATCH 
+    ROLLBACK TRANSACTION
+    -- Execute error retrieval routine.
+    EXECUTE usp_GetErrorInfo;
+    END CATCH;
+COMMIT TRANSACTION
+GO
 SELECT * FROM #temp1
 
 --------------Autre solution avec une création de BDD-----------------------
@@ -125,9 +137,9 @@ FROM #temp1
 GROUP BY BirthDate, NationalIDNumber
 ORDER BY Birthdate DESC
 
-SELECT CONVERT(NVARCHAR, DateDeNaissance_min, 101 ) AS Date, NationalIDNumber As NumeroNational FROM #temp2 
+SELECT CONVERT(NVARCHAR, DateDeNaissance_min, 103 ) AS Date, NationalIDNumber As NumeroNational FROM #temp2 
 UNION
-SELECT CONVERT(NVARCHAR, DateDeNaissance_max, 101 ) AS Date, NationalIDNumber As NumeroNational  FROM #temp3
+SELECT CONVERT(NVARCHAR, DateDeNaissance_max, 103 ) AS Date, NationalIDNumber As NumeroNational  FROM #temp3
 
 
 
@@ -195,16 +207,16 @@ INSERT INTO  #checking
 ALTER TABLE #savings
 ADD CONSTRAINT CK_Diff CHECK (montant < 100)
 
-BEGIN TRY  
-    BEGIN TRANSACTION
-UPDATE #checking
-SET montant = 50
-FROM #checking
+BEGIN TRANSACTION
+    BEGIN TRY  
 
+    UPDATE #checking
+    SET montant = 50
+    FROM #checking
 Commit Transaction
-END TRY  
-    BEGIN CATCH  
-    Rollback Transaction
+    END TRY  
+        BEGIN CATCH  
+Rollback Transaction
         SELECT
         ERROR_NUMBER() AS ErrorNumber,
         ERROR_SEVERITY() AS ErrorSeverity,
@@ -216,8 +228,52 @@ END TRY
 GO 
 
 
---https://stackoverflow.com/questions/43842183/banking-transaction-in-sql
 
---https://social.msdn.microsoft.com/Forums/sqlserver/en-US/18f301cf-205a-4403-a03b-f7c0af692f56/create-bank-statement-in-ms-sql
+/****************************************************************************************************************************************************
+* 1. Ecrire un petit programme qui liste l'ensemble des personnes ayant un mail de la DB AdventureWorks2017.
+*    Nous souhaiterons avoir les données suivantes (champs à renommer): 
+*     Nom (FirstName), Prénom (LastName), BusinessEntityID et (Adresse mail) EmailAddress.
+*    ...et ce dans une table temporaire #temp2
+*    On utilisera aussi une table temporaire @temp1 
+* 
+* 2. Déclarer 3 variables type firstname, lastname, Email
+*    Ces 3 variables doivent reprendre comme contenu les données Prénom, Nom, Adresse mail où BusinessEntityID est égale à 295 de la table #temp2
+*    Afficher le contenu de ces variables via un SELECT
+* 
+*****************************************************************************************************************************************************/
+
+USE
+AdventureWorks2017
+GO
+--IF OBJECT_ID('tempdb.#temp2') is not NULL
+DROP table #temp2
+--IF OBJECT_ID('tempdb.#temp1') is not NULL
+DROP table #temp1
+GO
+
+SELECT Person.BusinessEntityID, Person.LastName AS Nom, Person.FirstName AS Prenom, Person.EmailAddress.EmailAddress AS [Adresse mail]
+INTO #temp2 
+FROM Person.Person
+INNER JOIN person.EmailAddress
+ON Person.Person.BusinessEntityID = Person.EmailAddress.EmailAddressID
+GO
+CREATE TABLE #temp1
+(ID int Identity(1,1) Primary Key)
+GO
+SELECT * FROM #temp2
+
+DECLARE @FirstName AS VARCHAR(50);
+DECLARE @LastName AS VARCHAR(50);
+DECLARE @Email AS VARCHAR(50);
+
+SET @FirstName = (SELECT Prenom FROM #temp2 WHERE BusinessEntityID = 295);
+SET @LastName = (SELECT Nom FROM #temp2 WHERE BusinessEntityID = 295);
+SET @Email = (SELECT [Adresse mail] FROM #temp2 WHERE BusinessEntityID = 295);
+
+SELECT @FirstName AS "Prenom";
+SELECT @LastName AS "Nom";
+SELECT @Email AS "Mail";
+GO
+
 
 

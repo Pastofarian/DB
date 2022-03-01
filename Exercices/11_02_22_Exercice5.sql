@@ -40,3 +40,52 @@ Go
 * 
 *****************************************************************************************************************************************************/
 
+USE
+AdventureWorks2017
+GO
+--IF OBJECT_ID('tempdb.#temp2') is not NULL
+DROP table #temp2
+--IF OBJECT_ID('tempdb.#temp1') is not NULL
+DROP table #temp1
+GO
+
+SELECT Person.BusinessEntityID, Person.LastName AS Nom, Person.FirstName AS Prenom, Person.EmailAddress.EmailAddress AS [Adresse mail]
+INTO #temp2 
+FROM Person.Person
+INNER JOIN person.EmailAddress
+ON Person.Person.BusinessEntityID = Person.EmailAddress.EmailAddressID
+GO
+CREATE TABLE #temp1
+(ID int Identity(1,1) Primary Key)
+GO
+SELECT * FROM #temp2
+
+DECLARE @FirstName AS VARCHAR(50);
+DECLARE @LastName AS VARCHAR(50);
+DECLARE @Email AS VARCHAR(50);
+
+SET @FirstName = (SELECT Prenom FROM #temp2 WHERE BusinessEntityID = 295);
+SET @LastName = (SELECT Nom FROM #temp2 WHERE BusinessEntityID = 295);
+SET @Email = (SELECT [Adresse mail] FROM #temp2 WHERE BusinessEntityID = 295);
+
+SELECT @FirstName;
+SELECT @LastName;
+SELECT @Email;
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
