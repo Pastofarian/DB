@@ -23,6 +23,8 @@ Sources utiles :
 
 (c) MB - Ifosupwavre*/
 
+/***************************OK*/
+
 USE AdventureWorks2017
 GO
 
