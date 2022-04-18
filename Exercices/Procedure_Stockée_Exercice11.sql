@@ -80,3 +80,70 @@ GO
 EXECUTE HumanResources.uspGetID @ID = 123
 GO
 DROP PROCEDURE HumanResources.uspGetID
+
+/**************************************************************
+  ETAPE n°1
+ *************************************************************/
+
+USE master
+GO
+
+IF EXISTS (SELECT * FROM master.sys.databases WHERE name = 'IFOSUP_CURSOR')
+DROP DATABASE IFOSUP_CURSOR 
+GO
+CREATE DATABASE IFOSUP_CURSOR
+GO
+
+USE IFOSUP_CURSOR
+GO
+
+/**************************************************************
+  ETAPE n°1
+ *************************************************************/
+USE AdventureWorks2017
+GO
+
+SELECT * FROM Person.Person
+SELECT * FROM Person.EmailAddress
+
+SELECT P.BusinessEntityID, FirstName, LastName, EmailAddress
+INTO #temp1
+FROM Person.Person P
+INNER JOIN Person.EmailAddress E
+ON P.BusinessEntityID = E.BusinessEntityID
+
+SELECT * FROM #temp1
+GO
+/**************************************************************
+  ETAPE n°2
+ *************************************************************/
+DROP PROCEDURE spGetEmail
+GO
+ 
+ --CREATE PROCEDURE spGetEmail
+ ALTER PROCEDURE spGetEmail
+
+@id INT,
+@FirstName VARCHAR(255) OUTPUT,
+@LastName VARCHAR(255) OUTPUT
+
+ AS
+ BEGIN
+    SELECT @FirstName = FirstName, @LastName = LastName
+    FROM #temp1 
+    WHERE BusinessEntityID = @id
+END
+GO
+
+DECLARE @FirstName VARCHAR(255),
+        @LastName VARCHAR(255),
+        @Result INT;
+
+EXECUTE @Result = spGetEmail 12,
+@FirstName OUTPUT,
+@LastName OUTPUT;
+
+
+SELECT @Result AS Resultat,
+@FirstName AS Prenom,
+@LastName AS Nom
