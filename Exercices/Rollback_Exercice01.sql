@@ -43,9 +43,9 @@ BEGIN TRANSACTION
 
     END TRY  
     BEGIN CATCH 
-    ROLLBACK TRANSACTION
     -- Execute error retrieval routine.
     EXECUTE usp_GetErrorInfo;
+    ROLLBACK TRANSACTION
     END CATCH;
 COMMIT TRANSACTION
 GO
@@ -64,6 +64,8 @@ QtyAvailable int)
 
 -- SELECT * FROM tblProduct
 
+/***************************************************************************************/
+
 Create Table tblGender
 (
 Gender varchar(50))
@@ -71,22 +73,24 @@ Gender varchar(50))
  -- Début requete
 
 BEGIN TRY  
-BEGIN TRANSACTION
+    BEGIN TRANSACTION
 
--- SELECT 1/0 test;   -- retirer le commentaire pour avoir l'erreur
-INSERT INTO  tblProduct (Name, UnitPrice, QtyAvailable) VALUES ('HomeWork', 100, 1)
+        SELECT 1/0;   -- retirer le commentaire pour avoir l'erreur
+        INSERT INTO  tblGender (Gender) VALUES ('HomeWork')
 
-Commit Transaction
+    Commit Transaction
 END TRY  
-    BEGIN CATCH  
+BEGIN CATCH  
+
+    SELECT
+    ERROR_NUMBER() AS ErrorNumber
+    ,ERROR_SEVERITY() AS ErrorSeverity
+    ,ERROR_STATE() AS ErrorState
+    ,ERROR_PROCEDURE() AS ErrorProcedure
+    ,ERROR_LINE() AS ErrorLine
+    ,ERROR_MESSAGE() AS ErrorMessage
+    
     Rollback Transaction
-        SELECT
-        ERROR_NUMBER() AS ErrorNumber
-        ,ERROR_SEVERITY() AS ErrorSeverity
-        ,ERROR_STATE() AS ErrorState
-        ,ERROR_PROCEDURE() AS ErrorProcedure
-        ,ERROR_LINE() AS ErrorLine
-        ,ERROR_MESSAGE() AS ErrorMessage
-    END CATCH
+END CATCH
 GO 
-SELECT * FROM tblProduct
+SELECT * FROM tblGender

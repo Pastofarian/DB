@@ -92,6 +92,19 @@ DECLARE @gender NVARCHAR(1),
 
 EXECUTE NbrOfEmployees 'M', '2009', '2012', @count OUTPUT
 
-SELECT @count AS ['Nombre d'employés']
+SELECT @count AS ['Nombre demployés']
 
 Print 'Michel Bernair, voici mon résultat:' + '  ' + cast (@count as nvarchar(2))
+
+/******************Autre possibilité***********/
+@genre VARCHAR(1),
+@annee1 VARCHAR(4),
+@annee2 VARCHAR(4),
+@count INT OUTPUT
+
+AS
+BEGIN   
+    SET @count = (SELECT COUNT(BusinessEntityID) FROM tbl_micke_bern 
+    WHERE Gender = @genre AND (SELECT RIGHT(Date_embauche,4))> @annee1 AND (SELECT RIGHT(Date_embauche,4)) < @annee2)
+END
+GO

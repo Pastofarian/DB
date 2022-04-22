@@ -77,7 +77,7 @@ GO
  SELECT * FROM EXAMEN_REEL_030420201_EX2_Mike_Bern
 
  /**************************************************************
-  ETAPE n°4
+  ETAPE n°4 
  *************************************************************/ 
 
  		DECLARE @date NVARCHAR(10)
@@ -92,19 +92,60 @@ BEGIN TRANSACTION
     [Type_telephone] )
     VALUES ('12','879342154', '1850-12-31', 'M', 'M', 'Mr', 'Mike', 'Bern', '000-111-2222',
     'Work')
-            IF @date >= (SELECT SUBSTRING(CAST(Date_de_naissance AS NVARCHAR(10)),1,4) AS Date_de_naissance FROM EXAMEN_REEL_030420201_EX2_Mike_Bern WHERE BusinessEntityID = 12)
+        IF @date >= (SELECT SUBSTRING(CAST(Date_de_naissance AS NVARCHAR(10)),1,4) AS Date_de_naissance FROM EXAMEN_REEL_030420201_EX2_Mike_Bern WHERE BusinessEntityID = 12)
             
         BEGIN
             ROLLBACK TRANSACTION
             RAISERROR ('Cette entrée n''est pas possible car la personne est née avant 1900',1,1)
         END
   
-If @error <> 0
-BEGIN
-Rollback TRANSACTION
-PRINT  @Error  
-END
-If @error = 0
-BEGIN
-COMMIT TRANSACTION
-END
+--If @error <> 0
+--BEGIN
+--Rollback TRANSACTION
+--PRINT  @Error  
+--END
+--If @error = 0
+--BEGIN
+--COMMIT TRANSACTION
+--END
+
+---------------- Meilleur solution----------
+
+CREATE PROCEDURE usp_GetErrorInfo  
+AS  
+SELECT  
+    ERROR_NUMBER() AS ErrorNumber  
+    ,ERROR_SEVERITY() AS ErrorSeverity  
+    ,ERROR_STATE() AS ErrorState  
+    ,ERROR_PROCEDURE() AS ErrorProcedure  
+    ,ERROR_LINE() AS ErrorLine  
+    ,ERROR_MESSAGE() AS ErrorMessage;  
+GO 
+
+DECLARE @date NVARCHAR(10)
+DECLARE @error int
+   SET @error = @@ERROR
+   SET @date = '1900'
+
+BEGIN TRANSACTION  
+
+    INSERT INTO #temp5 (BusinessEntityId, NationalIDNumber,
+    [Date_de_Naissance], MaritalStatus, Gender, Title, FirstName, LastName, PhoneNumber,
+    [Type_telephone] )
+    VALUES ('16','879342154', '1950-12-31', 'M', 'M', 'Mr', 'Mike', 'Bern', '000-111-2222',
+    'Work')
+         IF @date >= (SELECT SUBSTRING(CAST(Date_de_naissance AS NVARCHAR(10)),1,4) AS Date_de_naissance FROM #temp5 WHERE BusinessEntityID = 16)
+            
+         BEGIN
+            ROLLBACK TRANSACTION
+            RAISERROR ('Cette entrée n''est pas possible car la personne est née avant 1900',1,1)
+            PRINT @Error 
+            EXECUTE usp_GetErrorInfo;
+         END
+         ELSE 
+
+         BEGIN
+            COMMIT TRANSACTION
+         END
+
+GO

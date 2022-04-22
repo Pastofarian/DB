@@ -69,6 +69,12 @@ ELSE  --  je suis une fille
  --IF/Else----------------------------------------------------------------------------------------------
 
 ALTER TABLE tbl_Bernair_Michel ADD Date_et_Heure Datetime
+-------------------------
+ALTER TABLE #temp3
+ALTER COLUMN LoginID NVARCHAR(30) NULL -- pour autoriser null
+
+UPDATE #temp3
+SET LoginID = NULL
 
 --ALTER Table pour ajouter un champ-----------------------------------------------------------------------
 
@@ -93,7 +99,7 @@ DECLARE @i INT =1
 DECLARE @nbligne INT
 SET @nbLigne = (SELECT COUNT(age) FROM Tbl_Vaccin)
 
-WHILE @i <= @nbligne
+WHILE (@i <= @nbligne)
     BEGIN
         SET @age = (SELECT age FROM Tbl_Vaccin WHERE @i = age)
         IF @age >= 70
@@ -115,18 +121,32 @@ WHILE @i <= @nbligne
             BEGIN
                 PRINT 'ERROR'
             END
-        SET @i = @i + 1;
+        SET @i = @i + 1
     END
 
+------- -------------------  -------------------------- --------------------------
+
+DECLARE @id INT
+DECLARE @i INT
+SET @i = 1
+DECLARE @nbligne INT
+SET @nbLigne = (SELECT COUNT(BusinessEntityID) FROM Tbl_IdVaccin)
+
+WHILE @i <= @nbligne
+    BEGIN 
+        SET @id = (SELECT BusinessEntityID FROM tbl_IdVaccin)
+        IF @id % 2 = 1
+            BEGIN
+                UPDATE tbl_IdVaccin
+                SET Vaccin = 'x'
+                WHERE @i = BusinessEntityID
+            END
+            SET @i = @i + 1;
+    END
+
+Select * from tbl_IdVaccin
 
 --Boucle While + UPDATE-----------------------------------------------------------------------------------
-
-GO
-IF EXISTS (SELECT name FROM sysobjects WHERE name = 'dbo.GetEmployeeIFOSUP' AND type = 'P')
-  DROP PROCEDURE dbo.GetEmployeeIFOSUP
-GO
-
---DROP Procédure ---------------------------------------------------
 
 DECLARE @maxWeight FLOAT, @productKey INTEGER  
 SET @maxWeight = 100.00  
@@ -153,11 +173,13 @@ GO
 
 --Table Audit---------------------------------------------------------------------------------------------
 
-IF OBJECT_ID(N'dbo.EcartJour', N'FN')IS NOT NULL
-DROP FUNCTION dbo.EcartJour;
+IF OBJECT_ID(N'dbo.IFOSUP_NewFormatDate', N'FN')IS NOT NULL
+DROP FUNCTION dbo.IFOSUP_NewFormatDate;
 GO
 
+
 CREATE FUNCTION dbo.EcartJour (@date1 DATETIME, @date2 DATETIME)
+--ALTER FUNCTION dbo.EcartJour (@date1 DATETIME, @date2 DATETIME)
 RETURNS INT
 AS BEGIN
     RETURN ABS(DATEDIFF(day, @date1, @date2))
@@ -195,6 +217,42 @@ BEGIN
     PRINT @Etat
 
 END
+CLOSE cur1
+DEALLOCATE cur1
+
+----   ---------------------------------           -----------------------------
+
+DECLARE @email VARCHAR(30)
+DECLARE @sexe INT
+DECLARE @nom VARCHAR(30)
+DECLARE @prenom VARCHAR(30)
+DECLARE @id INT
+DECLARE @remarque VARCHAR(30);
+
+
+DECLARE cur1 CURSOR FOR (SELECT Id, Nom, Prenom, Sexe, Email, Remarque FROM tbl_Bernair_Michel_BIS WHERE Email LIKE '%ifosupwavre.be')
+ 
+OPEN cur1
+
+FETCH NEXT From cur1 INTO @id, @nom, @prenom, @sexe, @email, @remarque
+
+WHILE (@@FETCH_STATUS = 0)
+BEGIN
+   IF (@sexe = 1)
+      BEGIN
+                UPDATE tbl_Bernair_Michel_BIS
+                SET Email = @nom + '.' + @prenom + '.' + 'M@ifosupwavre.be' 
+                WHERE id = @id 
+      END
+   ELSE IF (@sexe = 2)
+      BEGIN
+                UPDATE tbl_Bernair_Michel_BIS
+                SET Email = @nom + '.' + @prenom + '.' + 'F@ifosupwavre.be'
+                WHERE id = @id  
+      END
+FETCH NEXT From cur1 INTO @id, @nom, @prenom, @sexe, @email, @remarque
+END
+
 CLOSE cur1
 DEALLOCATE cur1
 
@@ -269,5 +327,83 @@ SELECT
     @nom AS Nom, 
     @date AS Date
 
+/***********Autre exemple***************/ 
+
+--CREATE PROCEDURE spGetNom
+ALTER PROCEDURE spGetNom
+
+@id INT
+
+AS 
+BEGIN
+    DECLARE @prenom VARCHAR(30) 
+    DECLARE @nom VARCHAR(30)
+
+    SET @nom = (SELECT nom FROM Tbl_Mike_Bern
+    WHERE id = @id)
+    SET @prenom = (SELECT prenom FROM Tbl_Mike_Bern
+    WHERE id = @id)
+
+    UPDATE Tbl_Mike_Bern 
+    SET LoginID = @prenom + '.' + @nom + '.' + LEFT(@prenom, 1) + RIGHT(@nom, 2) + '@ifosupwavre.be'
+    WHERE id = @id
+
+END 
+GO
+
+EXECUTE spGetNom 10 
+
+SELECT * FROM Tbl_Mike_Bern
+
+PRINT ' Affichage de votre Nom et Prenom'
+PRINT '---------------------------------'
+PRINT @nom + '  ' + @prenom + ' ' + @email
+
 -- Procedure stockee------------------------------------------------------------------------------------
 
+SELECT id, titre =
+    CASE 
+        WHEN Gender = 'M' THEN 'Mr.'
+        ELSE 'Ms.'
+        END, prenom, nom, numero_national, type_telephone = 
+    CASE   
+         WHEN PhoneNumberTypeID = 1 THEN 'GSM' 
+         WHEN PhoneNumberTypeID = 2 THEN 'Tel.maison'
+         WHEN PhoneNumberTypeID = 3 THEN 'Tel.travail' 
+    END, LoginID, titre_job, date_naissance, status_marital, genre, date_embauche   
+INTO #temp2
+FROM #temp1 
+GO  
+
+--CASE - WHEN-------------------------------------
+
+IF EXISTS (SELECT 1 FROM sys.triggers 
+           WHERE Name = 'tgr_test')
+DROP TRIGGER tgr_test
+GO
+
+CREATE TRIGGER tgr_test
+ON TBL_NOM_PRENOM
+AFTER INSERT
+  AS 
+      SET NOCOUNT ON;
+
+      DECLARE @id INT
+      DECLARE @nom VARCHAR(30)
+      DECLARE @prenom VARCHAR(30)
+
+      SET @id = (SELECT BusinessEntityID FROM inserted)
+      SET @nom = (SELECT nom FROM inserted)
+      SET @prenom = (SELECT prenom FROM inserted)
+
+      UPDATE TBL_NOM_PRENOM
+      SET LoginID = 'adventure-works' + @prenom + '.' + @nom + '@ifosup.wavre.be' 
+      INSERT into TBL_Audit VALUES(cast(@id as varchar (10)), 'Nouvel employé Ajouté : '+cast (getdate() as varchar(20)) )
+      
+GO
+  
+INSERT INTO TBL_NOM_PRENOM
+VALUES ('1001','', '','','','','','','Mike','Bern','BE','x')
+GO
+
+--Trigger-------------------------------------------------------------------------------------------

@@ -100,8 +100,8 @@ WHILE @i <= @nbligne
         UPDATE tbl_micke_bern_BIS
         SET [Date_et_Heure] = GETDATE()
         WHERE [id] = 1 OR ID = 2
-   SET @i = @i + 1;
-END
+        SET @i = @i + 1;
+    END
 GO
 
 SELECT * FROM tbl_micke_bern_BIS
@@ -134,7 +134,7 @@ GO
 DECLARE @prenom VARCHAR(30),
         @nom VARCHAR(30),
         @date DATETIME,
-        @result INT
+        --@result INT
 
 EXECUTE splist 1, @prenom OUTPUT, @nom OUTPUT, @date OUTPUT
 
